@@ -32,10 +32,10 @@ class TelegramContact:
     def __init__(self):
         self.telegram_url = "https://web.telegram.org/#/login"
 
-    def save_contacts(self, row, filename):
+    def save_contacts(self, persons, filename):
         with open(filename, 'w', newline='') as csvfile:
             contacts = csv.writer(csvfile)
-            for row in info:
+            for row in persons:
                 contacts.writerow([row.name, row.phone])
         
     def get_contacts(self):
@@ -64,10 +64,14 @@ class TelegramContact:
                     persons.append(Person(name, phone))
                     crawler.driver.find_elements_by_class_name('md_modal_action_close')[-1].click()
             except Exception as ex:
-                # print(ex)
+                print(ex)
                 pass
             
-            self.save_contacts('contacts' + str(i) + '.csv')
+            try:
+                self.save_contacts(persons, 'contacts' + str(i) + '.csv')
+            except Exception as ex:
+                print(ex)
+                pass
             i += 1
             db.append(persons)
         return db
