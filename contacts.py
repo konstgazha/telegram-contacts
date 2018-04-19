@@ -1,21 +1,26 @@
 # -*- coding: utf-8 -*-
 import crawlers
-import pickle
 import csv
 import re
 import time
 
 
 class Person:
-    def __init__(self, name, phone):
+    def __init__(self, name):
         self.name = name
-        self.phone = phone
+        self._info = ''
     
     def set_name(self, name):
         self.name = name
     
     def set_phone(self, phone):
         self.phone = phone
+    
+    def set_info(self, info):
+        self._info = info
+    
+    def get_info(self):
+        return self._info
     
     def get_name(self):
         return self.name
@@ -31,12 +36,13 @@ class Person:
 class TelegramContact:
     def __init__(self):
         self.telegram_url = "https://web.telegram.org/#/login"
+        self.delimiter = ' '
 
     def save_contacts(self, persons, filename):
         with open(filename, 'w', newline='') as csvfile:
             contacts = csv.writer(csvfile)
             for row in persons:
-                contacts.writerow([row.name, row.phone])
+                contacts.writerow([row.name, row._info])
         
     def get_contacts(self):
         crawler = crawlers.SeleniumCrawler()
@@ -55,20 +61,23 @@ class TelegramContact:
                     contact.click()
                     time.sleep(1)
                     name = crawler.driver.find_elements_by_class_name('peer_modal_profile_name')[-1].text
-                    phone = ''
+                    info_elems = ''
                     try:
-                        phone = crawler.driver.find_elements_by_xpath("//div[@class='md_modal_section_param_value']")[0].text
+                        info_elems = crawler.driver.find_elements_by_xpath("//div[@class='md_modal_section_param_value']")
+                        info_elems = [i.text for i in info_elems]
                     except Exception as ex:
-                        # print(ex)
+                        print(ex)
                         pass
-                    persons.append(Person(name, phone))
+                    person = Person(name)
+                    person.set_info(self.delimiter.join(info_elems))
+                    persons.append(person)
                     crawler.driver.find_elements_by_class_name('md_modal_action_close')[-1].click()
             except Exception as ex:
                 print(ex)
                 pass
             
             try:
-                self.save_contacts(persons, 'contacts' + str(i) + '.csv')
+                self.save_contacts(persons, 'contactsx' + str(i) + '.csv')
             except Exception as ex:
                 print(ex)
                 pass
