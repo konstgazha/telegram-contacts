@@ -36,6 +36,7 @@ class Person:
 class TelegramContact:
     def __init__(self):
         self.telegram_url = "https://web.telegram.org/#/login"
+        self.crawler = ''
         self.delimiter = ' '
 
     def save_contacts(self, persons, filename):
@@ -43,10 +44,17 @@ class TelegramContact:
             contacts = csv.writer(csvfile)
             for row in persons:
                 contacts.writerow([row.name, row._info])
-        
+    
+    def open_browser(self):
+        self.crawler = crawlers.SeleniumCrawler()
+        self.crawler.driver.get(self.telegram_url)
+    
+    def close_browser(self):
+        self.crawler.driver.quit()
+    
     def get_contacts(self):
-        crawler = crawlers.SeleniumCrawler()
-        crawler.driver.get(self.telegram_url)
+        if not self.crawler:
+            self.open_browser()
         i = 0
         db = []
         while True:
@@ -56,14 +64,14 @@ class TelegramContact:
                 break
             persons = []
             try:
-                contacts = crawler.driver.find_elements_by_xpath("//a[@class='md_modal_list_peer_name']")
+                contacts = self.crawler.driver.find_elements_by_xpath("//a[@class='md_modal_list_peer_name']")
                 for contact in contacts:
                     contact.click()
                     time.sleep(1)
-                    name = crawler.driver.find_elements_by_class_name('peer_modal_profile_name')[-1].text
+                    name = self.crawler.driver.find_elements_by_class_name('peer_modal_profile_name')[-1].text
                     info_elems = ''
                     try:
-                        info_elems = crawler.driver.find_elements_by_xpath("//div[@class='md_modal_section_param_value']")
+                        info_elems = self.crawler.driver.find_elements_by_xpath("//div[@class='md_modal_section_param_value']")
                         info_elems = [i.text for i in info_elems]
                     except Exception as ex:
                         print(ex)
@@ -71,7 +79,7 @@ class TelegramContact:
                     person = Person(name)
                     person.set_info(self.delimiter.join(info_elems))
                     persons.append(person)
-                    crawler.driver.find_elements_by_class_name('md_modal_action_close')[-1].click()
+                    self.crawler.driver.find_elements_by_class_name('md_modal_action_close')[-1].click()
             except Exception as ex:
                 print(ex)
                 pass
@@ -87,4 +95,5 @@ class TelegramContact:
 
 
 tc = TelegramContact()
+tc.open_browser()
 info = tc.get_contacts()
